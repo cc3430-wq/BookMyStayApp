@@ -1,85 +1,141 @@
 import java.util.*;
 /**
  * ============================================================
- UC10-BookingCancellation
- * CLASS - CancellationService
+ * CLASS - ConcurrentBookingProcessor
  * ============================================================
- * Use Case 10: Booking Cancellation & Inventory Rollback
+ * Use Case 11: Concurrent Booking Simulation
  * Description:
- * This class is responsible for handling
- * booking cancellations.
- * It ensures that:
- * - Cancelled room IDs are tracked
- * - Inventory is restored correctly
- * - Invalid cancellations are prevented
- * A stack is used to model rollback behavior.
- * @version 10.0
+ * This class represents a booking processor
+ * that can be executed by multiple threads.
+ * It demonstrates how shared resources
+ * such as booking queues and inventory
+ * must be accessed in a thread-safe manner.
+ * @version 11.0
  */
-class RoomInventory {
-    private Map<String, Integer> rooms;
+class Reservation {
+    String guestName;
+    String roomType;
 
-    public RoomInventory() {
-        rooms = new HashMap<>();
-        rooms.put("Single", 5);
-        rooms.put("Double", 3);
-        rooms.put("Suite", 2);
-    }
-
-    public void increaseRoom(String roomType) {
-        rooms.put(roomType, rooms.get(roomType) + 1);
-    }
-
-    public int getAvailability(String roomType) {
-        return rooms.get(roomType);
+    public Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
     }
 }
 
-class CancellationService {
-    private Stack<String> releasedRoomIds;
-    private Map<String, String> reservationRoomTypeMap;
+class BookingRequestQueue {
+    private Queue<Reservation> queue = new LinkedList<>();
 
-    public CancellationService() {
-        releasedRoomIds = new Stack<>();
-        reservationRoomTypeMap = new HashMap<>();
+    public BookingRequestQueue() {
+        queue.add(new Reservation("Abhi", "Single"));
+        queue.add(new Reservation("Vanmathi", "Double"));
+        queue.add(new Reservation("Kural", "Suite"));
+        queue.add(new Reservation("Subha", "Single"));
     }
 
-    public void registerBooking(String reservationId, String roomType) {
-        reservationRoomTypeMap.put(reservationId, roomType);
+    public Reservation getNext() {
+        return queue.poll();
     }
 
-    public void cancelBooking(String reservationId, RoomInventory inventory) {
-        if (!reservationRoomTypeMap.containsKey(reservationId)) {
-            System.out.println("Invalid reservation ID.");
-            return;
+    public boolean isEmpty() {
+        return queue.isEmpty();
+    }
+}
+
+class RoomInventory {
+    private Map<String, Integer> rooms = new HashMap<>();
+    private Map<String, Integer> counters = new HashMap<>();
+
+    public RoomInventory() {
+        rooms.put("Single", 5);
+        rooms.put("Double", 3);
+        rooms.put("Suite", 2);
+
+        counters.put("Single", 1);
+        counters.put("Double", 1);
+        counters.put("Suite", 1);
+    }
+
+    public boolean allocate(String roomType) {
+        if (rooms.get(roomType) > 0) {
+            rooms.put(roomType, rooms.get(roomType) - 1);
+            return true;
         }
-
-        String roomType = reservationRoomTypeMap.get(reservationId);
-        inventory.increaseRoom(roomType);
-        releasedRoomIds.push(reservationId);
-
-        System.out.println("Booking cancelled successfully. Inventory restored for room type: " + roomType);
+        return false;
     }
 
-    public void showRollbackHistory() {
-        System.out.println("\nRollback History (Most Recent First):");
+    public String generateRoomId(String roomType) {
+        int id = counters.get(roomType);
+        counters.put(roomType, id + 1);
+        return roomType + "-" + id;
+    }
 
-        while (!releasedRoomIds.isEmpty()) {
-            String id = releasedRoomIds.pop();
-            System.out.println("Released Reservation ID: " + id);
+    public Map<String, Integer> getRooms() {
+        return rooms;
+    }
+}
+
+class RoomAllocationService {
+    public void allocateRoom(Reservation r, RoomInventory inventory) {
+        if (inventory.allocate(r.roomType)) {
+            String roomId = inventory.generateRoomId(r.roomType);
+            System.out.println("Booking confirmed for Guest: " + r.guestName + ", Room ID: " + roomId);
+        }
+    }
+}
+
+class ConcurrentBookingProcessor implements Runnable {
+    private BookingRequestQueue bookingQueue;
+    private RoomInventory inventory;
+    private RoomAllocationService allocationService;
+
+    public ConcurrentBookingProcessor(BookingRequestQueue bookingQueue, RoomInventory inventory,
+                                      RoomAllocationService allocationService) {
+        this.bookingQueue = bookingQueue;
+        this.inventory = inventory;
+        this.allocationService = allocationService;
+    }
+
+    public void run() {
+        while (true) {
+            Reservation reservation;
+
+            synchronized (bookingQueue) {
+                if (bookingQueue.isEmpty()) return;
+                reservation = bookingQueue.getNext();
+            }
+
+            synchronized (inventory) {
+                allocationService.allocateRoom(reservation, inventory);
+            }
         }
     }
 }
 
 public class BookMyStayApp {
     public static void main(String[] args) {
-        System.out.println("Booking Cancellation");
 
+        System.out.println("Concurrent Booking Simulation");
+
+        BookingRequestQueue bookingQueue = new BookingRequestQueue();
         RoomInventory inventory = new RoomInventory();
-        CancellationService service = new CancellationService();
+        RoomAllocationService allocationService = new RoomAllocationService();
 
-        service.registerBooking("Single-1", "Single");
-        service.cancelBooking("Single-1", inventory);
-        service.showRollbackHistory();
+        Thread t1 = new Thread(new ConcurrentBookingProcessor(bookingQueue, inventory, allocationService));
+        Thread t2 = new Thread(new ConcurrentBookingProcessor(bookingQueue, inventory, allocationService));
 
-        System.out.println("\nUpdated Single Room Availability: "
-                + inventory.getAvailability("Single"));
+        t1.start();
+        t2.start();
+
+        try {
+            t1.join();
+            t2.join();
+        } catch (InterruptedException e) {
+            System.out.println("Thread execution interrupted.");
+        }
+
+        System.out.println("\nRemaining Inventory:");
+        for (Map.Entry<String, Integer> entry : inventory.getRooms().entrySet()) {
+            System.out.println(entry.getKey() + ": " + entry.getValue());
+        }
+    }
+}
