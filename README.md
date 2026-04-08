@@ -1,14 +1,14 @@
 # BookMyStayApp
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios
-Use Case 6: Reservation Confirmation & Room Allocation
-Goal: Confirm booking requests by assigning rooms safely while ensuring inventory consistency and preventing double-booking under all circumstances.
+Use Case 7: Add-On Service Selection
+Goal: Extend the booking model to support optional services, demonstrating how real-world business features can be added without modifying core booking or allocation logic.
 Actor:
-Booking Service – processes queued booking requests and performs room allocation.
-Inventory Service – maintains and updates room availability state.
+Guest – selects optional services for an existing reservation.
+Add-On Service – represents an individual optional offering.
+Add-On Service Manager – manages the association between reservations and selected services.
 Flow:
-Booking request is dequeued from the request queue.
-The system checks availability for the requested room type.
-A unique room ID is generated and assigned.
-The room ID is recorded to prevent reuse.
-Inventory count is decremented immediately.
-Reservation is confirmed.
+Guest selects one or more add-on services.
+Selected services are added to a list.
+The list of services is mapped to the corresponding reservation ID.
+Additional cost for the reservation is calculated.
+Core booking and inventory state remain unchanged.
