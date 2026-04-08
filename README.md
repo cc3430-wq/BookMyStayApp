@@ -1,13 +1,14 @@
 # BookMyStayApp
 This project presents the design and implementation of a Hotel Booking Management System to illustrate the practical application of Core Java and fundamental data structures in real-world scenarios
-Use Case 5: Booking Request (First-Come-First-Served)
-Goal: Handle multiple booking requests fairly by introducing a request intake mechanism that preserves arrival order, reflecting real-world booking behavior during peak demand.
+Use Case 6: Reservation Confirmation & Room Allocation
+Goal: Confirm booking requests by assigning rooms safely while ensuring inventory consistency and preventing double-booking under all circumstances.
 Actor:
-Reservation – represents a guest’s intent to book a room.
-Booking Request Queue – manages and orders incoming booking requests.
+Booking Service – processes queued booking requests and performs room allocation.
+Inventory Service – maintains and updates room availability state.
 Flow:
-Guest submits a booking request.
-The request is added to the booking queue.
-Requests are stored in arrival order.
-Queued requests wait for processing by the allocation system.
-No inventory mutation occurs at this stage.
+Booking request is dequeued from the request queue.
+The system checks availability for the requested room type.
+A unique room ID is generated and assigned.
+The room ID is recorded to prevent reuse.
+Inventory count is decremented immediately.
+Reservation is confirmed.
