@@ -1,59 +1,59 @@
 import java.util.*;
-
 /**
  * ============================================================
- * MAIN CLASS - UseCase7AddOnServiceSelection
+ * CLASS - BookingHistory
  * ============================================================
- * Demonstrates add-on service selection for a reservation
+ * Use Case 8: Booking History & Reporting
+ * Description:
+ * This class maintains a record of
+ * confirmed reservations.
+ * It provides ordered storage for
+ * historical and reporting purposes.
+ * @version 8.0
  */
-public class BookMyStayApp {
-    public static void main(String[] args) {
-        System.out.println("Add-On Service Selection");
-        String reservationId = "Single-1";
-        AddOnService breakfast = new AddOnService("Breakfast", 500.0);
-        AddOnService spa = new AddOnService("Spa", 1000.0);
-        AddOnServiceManager manager = new AddOnServiceManager();
-        manager.addService(reservationId, breakfast);
-        manager.addService(reservationId, spa);
-        double totalCost = manager.calculateTotalServiceCost(reservationId);
-        System.out.println("Reservation ID: " + reservationId);
-        System.out.println("Total Add-On Cost: " + totalCost);
+public class BookingHistory {
+    class Reservation {
+        private String guestName;
+        private String roomType;
+        public Reservation(String guestName, String roomType) {
+            this.guestName = guestName;
+            this.roomType = roomType;
+        }
+        public String getGuestName() {
+            return guestName;
+        }
+        public String getRoomType() {
+            return roomType;
+        }
     }
-}
-
-class AddOnService {
-    private String serviceName;
-    private double cost;
-    public AddOnService(String serviceName, double cost) {
-        this.serviceName = serviceName;
-        this.cost = cost;
+    class BookingHistory {
+        private List<Reservation> confirmedReservations;
+        public BookingHistory() {
+            confirmedReservations = new ArrayList<>();
+        }
+        public void addReservation(Reservation reservation) {
+            confirmedReservations.add(reservation);
+        }
+        public List<Reservation> getConfirmedReservations() {
+            return confirmedReservations;
+        }
     }
-    public String getServiceName() {
-        return serviceName;
-    }
-    public double getCost() {
-        return cost;
-    }
-}
-
-class AddOnServiceManager {
-
-    private Map<String, List<AddOnService>> servicesByReservation;
-    public AddOnServiceManager() {
-        servicesByReservation = new HashMap<>();
-    }
-    public void addService(String reservationId, AddOnService service) {
-        servicesByReservation.putIfAbsent(reservationId, new ArrayList<>());
-        servicesByReservation.get(reservationId).add(service);
-    }
-    public double calculateTotalServiceCost(String reservationId) {
-        double total = 0;
-        List<AddOnService> services = servicesByReservation.get(reservationId);
-        if (services != null) {
-            for (AddOnService s : services) {
-                total += s.getCost();
+    class BookingReportService {
+        public void generateReport(BookingHistory history) {
+            System.out.println("\nBooking History Report\n");
+            for (Reservation r : history.getConfirmedReservations()) {
+                System.out.println("Guest: " + r.getGuestName()
+                        + ", Room Type: " + r.getRoomType());
             }
         }
-        return total;
     }
-}
+    public class UseCase8BookingHistoryReport {
+        public static void main(String[] args) {
+            BookingHistory history = new BookingHistory();
+            history.addReservation(new Reservation("Abhi", "Single"));
+            history.addReservation(new Reservation("Subha", "Double"));
+            history.addReservation(new Reservation("Vanmathi", "Suite"));
+            BookingReportService report = new BookingReportService();
+            report.generateReport(history);
+        }
+    }
